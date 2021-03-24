@@ -1,6 +1,10 @@
 import requests
 import json
 from datetime import datetime
+from threading import Timer
+
+grabUsers = dict()
+morningUsers=dict()
 
 roomIDs = {
     "东区学习室2-1": "2021",
@@ -51,6 +55,7 @@ def getUserInfoBySeat(roomID, seatID):
     data = []
     if len(infos) != 0:
         data = json.loads(infos)
+    print(data)
 
     result = {}
     for i in data:
@@ -166,3 +171,43 @@ def sign(token, seatNo):
 
     r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/ScanHandler.ashx', headers=headers, data=data)
     return r.text
+
+
+def autoGrab(token):
+    date=getToday()
+    headers = {
+        'Host': 'xzxt.hhtc.edu.cn',
+        'Connection': 'keep-alive',
+        'Origin': 'http://xzxt.hhtc.edu.cn',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': 'http://xzxt.hhtc.edu.cn/mobile/html/seat/seatdate.html?v=20191117&seataddress=DSXYLS602&seatdate=2021-03-24&mapid=56&isloadstatus=0',
+        'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember={0}'.format(token)
+    }
+
+    data = {
+        'data_type': 'setMapPointStatus',
+        'addresscode': 'DZXS301',
+        'mapid': '22',
+        'seatdate': date,
+    }
+
+    r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/SeatInfoHandler.ashx', headers=headers, data=data)
+    data = json.loads(json.loads(r.text)['data'])
+    for item in data:
+        if item['Status'] == '0':
+            time = '{0},{1}'.format(datetime.now().hour * 60 + datetime.now().minute + 10, 1439)
+            mSeat = json.loads(seatDate(token, item['Seat_Code'], time))
+            if mSeat['code'] == 0:
+                grabUsers.pop(token)
+                print('已预约，座位号{0}'.format(item['Seat_Code']))
+                mSign = json.loads((sign(token, item['Seat_Code'])))['code']
+                if mSign == 0:
+                    print('已签到')
+                break
+
+    if token in grabUsers:
+        print('新循环')
+        t = Timer(5, autoGrab, {token: token, date: date})
+        t.start()
+    return ''
