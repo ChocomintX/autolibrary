@@ -3,6 +3,7 @@ import json
 from flask import Flask, request
 from flask_cors import CORS
 from threading import Timer
+from datetime import datetime
 import libraryUtils as utils
 
 app = Flask(__name__)
@@ -13,6 +14,8 @@ CORS(app)
 def bindUser():
     data = request.json
     print(data)
+    if data['pycode'] != '1800130935':
+        return {'code': 1, 'msg': 'py码不对！'}
     results = utils.bindUser(data['username'], data['password'])
     if 'token' in results.keys():
         print(utils.unbindUser(results['token']))
@@ -51,33 +54,40 @@ def autoGrab():
     data = request.json
     print(data)
     token = data['token']
-    utils.grabUsers[token] = True
-    utils.autoGrab(token)
+    if token in utils.grabUsers and (utils.grabUsers[token]['status'] == 1 or utils.grabUsers[token]['status'] == 3):
+        return {'code': 1, 'msg': '创建任务失败，已存在任务！'}
 
-    return 'ok'
-
-
-@app.route('/autolibrary/api/morningGrab', methods=['POST'])
-def morningGrab():
-    data = request.json
-    print(data)
-    token = data['token']
-    utils.grabUsers[token] = True
-    utils.autoGrab(token)
-
-    return 'ok'
-
-@app.route('/test1')
-def test1():
-    utils.grabUsers['321'] = 1
-    print('321' in utils.grabUsers)
-    return json.dumps(utils.grabUsers)
+    type = data['type']
+    utils.grabUsers[token] = dict()
+    utils.grabUsers[token]['count'] = 1
+    if type == 1:
+        utils.grabUsers[token]['status'] = 1
+        return utils.autoGrab(token)
+    else:
+        utils.grabUsers[token]['status'] = 3
+        seatNo = data['seatNo']
+        return utils.morningGrab(token, seatNo)
 
 
-@app.route('/test2')
-def test2():
-    utils.grabUsers['123'] = 2
-    return json.dumps(utils.grabUsers)
+@app.route('/autolibrary/api/cancelGrab', methods=['POST'])
+def cancelGrab():
+    token = request.json['token']
+    if token in utils.grabUsers:
+        utils.grabUsers.pop(token)
+        return {'code': 0, 'msg': '取消抢座任务成功！'}
+    else:
+        return {'code': 1, 'msg': '该用户暂时没有抢座任务！'}
+
+
+@app.route('/autolibrary/api/isGrab', methods=['POST'])
+def isGrab():
+    token = request.json['token']
+    print(utils.grabUsers)
+    state = utils.grabUsers.get(token)
+    if state is None:
+        return {'code': 1}
+    else:
+        return {'code': 0, 'state': state}
 
 
 if __name__ == '__main__':
