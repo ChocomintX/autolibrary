@@ -57,7 +57,7 @@ def autoGrab():
     if token in utils.grabUsers and (utils.grabUsers[token]['status'] == 1 or utils.grabUsers[token]['status'] == 3):
         return {'code': 1, 'msg': '创建任务失败，已存在任务！'}
 
-    type = data['type']
+    type = int(data['type'])
     utils.grabUsers[token] = dict()
     utils.grabUsers[token]['count'] = 1
     if type == 1:
@@ -65,8 +65,9 @@ def autoGrab():
         return utils.autoGrab(token)
     else:
         utils.grabUsers[token]['status'] = 3
+        roomID = data['roomID']
         seatNo = data['seatNo']
-        return utils.morningGrab(token, seatNo)
+        return utils.morningGrab(token, roomID, seatNo)
 
 
 @app.route('/autolibrary/api/cancelGrab', methods=['POST'])
@@ -88,6 +89,34 @@ def isGrab():
         return {'code': 1}
     else:
         return {'code': 0, 'state': state}
+
+
+@app.route('/autolibrary/api/searchPeople', methods=['POST'])
+def searchPeople():
+    token = request.json['token']
+    # print(utils.results)
+    if token not in utils.results or utils.results[token]['status'] == 0:
+        name = request.json['name']
+        t = Timer(1, utils.searchPeople, {token: token, name: name})
+        t.start()
+        return {'code': 0, 'msg': '开始搜索，请稍候刷新页面！'}
+    else:
+        return {'code': 1, 'msg': '正在搜索'}
+
+
+@app.route('/autolibrary/api/isSearchPeople', methods=['POST'])
+def isSearchPeople():
+    token = request.json['token']
+    if token in utils.results:
+        return {'code': 0, 'results': utils.results[token]}
+    else:
+        return {'code': 1, 'results': []}
+
+
+@app.route('/autolibrary/api/cancelSeat', methods=['POST'])
+def cancelSeat():
+    token = request.json['token']
+    return {'code': 0, 'msg': '危险功能，不准用！'}
 
 
 if __name__ == '__main__':
