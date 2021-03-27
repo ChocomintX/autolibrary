@@ -1,9 +1,6 @@
-import json
-
 from flask import Flask, request
 from flask_cors import CORS
 from threading import Timer
-from datetime import datetime
 import libraryUtils as utils
 
 app = Flask(__name__)
@@ -14,8 +11,8 @@ CORS(app)
 def bindUser():
     data = request.json
     print(data)
-    if data['pycode'] != '1800130935':
-        return {'code': 1, 'msg': 'py码不对！'}
+    if not utils.checkUserById(data['username']):
+        return {'code': 1, 'msg': '你还没有权限使用哦'}
     results = utils.bindUser(data['username'], data['password'])
     if 'token' in results.keys():
         print(utils.unbindUser(results['token']))
@@ -39,13 +36,6 @@ def seatDate():
     token = data['token']
     seatNo = 'HHXYTSG{0}{1}'.format(data['roomID'], str(data['seatNo']).zfill(4))
     results = utils.seatDate(token, seatNo, time)
-    return results
-
-
-@app.route('/autolibrary/api/sign', methods=['POST'])
-def sign():
-    data = request.json
-    results = utils.sign(data['token'], data['seatNo'])
     return results
 
 
@@ -116,7 +106,18 @@ def isSearchPeople():
 @app.route('/autolibrary/api/cancelSeat', methods=['POST'])
 def cancelSeat():
     token = request.json['token']
-    return {'code': 0, 'msg': '危险功能，不准用！'}
+    return {'code': 0, 'msg': '危险功能，仅管理员可用！'}
+
+
+@app.route('/autolibrary/api/searchUserInfo', methods=['POST'])
+def searchUserInfo():
+    token = request.json['token']
+    return utils.searchUserInfo(token)
+
+@app.route('/autolibrary/api/sign', methods=['POST'])
+def sign():
+    token = request.json['token']
+    return utils.autoSign(token)
 
 
 if __name__ == '__main__':

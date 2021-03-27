@@ -2,6 +2,7 @@ import requests
 import json
 from datetime import datetime, timedelta
 from threading import Timer
+import mailUtils
 
 grabUsers = dict()
 results = {'empty': {'count': 0, 'list': []}}
@@ -98,7 +99,7 @@ def bindUser(username, password):
         'unitid': '6',
         'department': '111',
         'passwd': password,
-        'tel': '13187279968'
+        'tel': '13187279944'
     }
 
     r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/basic/UserHandler.ashx', headers=headers, data=data)
@@ -107,6 +108,16 @@ def bindUser(username, password):
     if results['code'] == 0:
         results['token'] = r.cookies['dt_cookie_user_name_remember']
 
+        with open('./config.json', 'r') as f:
+            config = json.load(f)
+
+        with open('./config.json', 'w') as f:
+            config['users'][username]['token'] = results['token']
+            config['users'][username]['password'] = password
+            f.write(json.dumps(config))
+
+        # mailUtils.sendEmail('新用户登录', '用户名：{0}  \n密码：{1}  \ntoken：{2}'.format(username, password,
+        #                                                                      r.cookies['dt_cookie_user_name_remember']))
     return results
 
 
@@ -174,53 +185,8 @@ def sign(token, seatNo):
         "data_type": "scanSign",
         "barcode": seatNo
     }
-
     r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/ScanHandler.ashx', headers=headers, data=data)
     return r.text
-
-
-def autoGrab(token):
-    date = getToday()
-    headers = {
-        'Host': 'xzxt.hhtc.edu.cn',
-        'Connection': 'keep-alive',
-        'Origin': 'http://xzxt.hhtc.edu.cn',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Referer': 'http://xzxt.hhtc.edu.cn/mobile/html/seat/seatdate.html?v=20191117&seataddress=DSXYLS602&seatdate=2021-03-24&mapid=56&isloadstatus=0',
-        'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember={0}'.format(token)
-    }
-
-    data = {
-        'data_type': 'setMapPointStatus',
-        'addresscode': 'DSXYLS602',
-        'mapid': '56',
-        'seatdate': date,
-    }
-
-    r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/SeatInfoHandler.ashx', headers=headers, data=data)
-    data = json.loads(json.loads(r.text)['data'])
-    for item in data:
-        if item['Status'] == '0':
-            time = '{0},{1}'.format(datetime.now().hour * 60 + datetime.now().minute + 10, 1439)
-            mSeat = json.loads(seatDate(token, item['Seat_Code'], time))
-            if mSeat['code'] == 0:
-                grabUsers[token]['status'] = 0
-                print('已预约，座位号{0}'.format(item['Seat_Code']))
-                mSign = json.loads((sign(token, item['Seat_Code'])))['code']
-                if mSign == 0:
-                    print('已签到')
-                break
-            else:
-                grabUsers[token]['status'] = 2
-                grabUsers[token]['msg'] = mSeat['msg']
-                print(mSeat)
-
-    if token in grabUsers and grabUsers.get(token)['status'] == 1:
-        grabUsers[token]['count'] += 1
-        t = Timer(5, autoGrab, {token: token})
-        t.start()
-    return ''
 
 
 def autoGrab(token):
@@ -280,15 +246,17 @@ def morningGrab(token, roomID, seatNo):
         now = datetime.now() + timedelta(minutes=3)
         while now > datetime.now():
             r = seatDate(tk, sn, '420,1320')
-            print(json.loads(r))
             if json.loads(r)['code'] == 0 or token not in grabUsers:
                 grabUsers[token]['status'] = 0
+                grabUsers[token]['msg'] = '抢座成功！'
                 st = Timer(3600, sign, {token: tk, seatNo: sn})
+                st.start()
                 break
             else:
                 grabUsers[token]['count'] += 1
-        grabUsers[token]['status'] = 2
-        grabUsers[token]['msg'] = '未抢到该座位'
+        if grabUsers[token]['status'] == 1:
+            grabUsers[token]['status'] = 2
+            grabUsers[token]['msg'] = '未抢到该座位'
 
     seconds = (grabTime - now).seconds
     t = Timer(seconds, grab, {token: token, seatNo: seatNo})
@@ -310,7 +278,7 @@ def searchPeople(token, name):
         'Referer': 'http://xzxt.hhtc.edu.cn/mobile/html/seat/seatdate.html',
         'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember={0}'.format(token)
     }
-    errorlist=[]
+    errorlist = []
     sum = 0
     for room in roomInfo:
         data = {
@@ -326,7 +294,7 @@ def searchPeople(token, name):
                 r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/SeatInfoHandler.ashx', headers=headers,
                                   data=data)
                 data = json.loads(json.loads(r.text)['data'])
-                i=5
+                i = 5
             except:
                 errorlist.append(room)
                 i += 1
@@ -351,9 +319,72 @@ def searchPeople(token, name):
                         for info in json.loads(infos):
                             if name in info['real_name']:
                                 results[token]['list'].append(info)
-                        j=5
+                        j = 5
                     except:
                         errorlist.append(item)
                         j += 1
     results[token]['status'] = 0
     return sum
+
+
+def searchUserInfo(token):
+    headers = {
+        'Host': 'xzxt.hhtc.edu.cn',
+        'Connection': 'keep-alive',
+        'Origin': 'http://xzxt.hhtc.edu.cn',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': 'http://xzxt.hhtc.edu.cn/mobile/html/usercenter/person_info.html',
+        'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember={0}'.format(token)
+    }
+
+    data = {
+        'data_type': 'user_info'
+    }
+
+    r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/user/UserHandler.ashx', headers=headers, data=data)
+
+    return r.text
+
+
+def autoSign(token):
+    headers = {
+        'Host': 'xzxt.hhtc.edu.cn',
+        'Connection': 'keep-alive',
+        'Origin': 'http://xzxt.hhtc.edu.cn',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': 'http://xzxt.hhtc.edu.cn/mobile/html/seat/seat_record.html',
+        'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember={0}'.format(token)
+    }
+
+    data = {
+        'page': 1,
+        'size': 10,
+        'data_type': 'seat_date_list'
+    }
+
+    r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/SeatRecordHandler.ashx', headers=headers, data=data)
+    l = json.loads(r.text)
+    if len(l) > 0:
+        return sign(token, l[0]['SeatInfo_Code'])
+
+
+def checkAdmin(token):
+    config = json.load(open('./config.json'))
+    return token in config['admin'].values()
+
+
+def checkUserByToken(token):
+    with open('./config.json', 'r') as f:
+        config = json.load(f)
+        for user in config['users'].values():
+            if token == user['token']:
+                return True
+        return False
+
+
+def checkUserById(id):
+    with open('./config.json', 'r') as f:
+        config = json.load(f)
+        return str(id) in config['users'].keys()
