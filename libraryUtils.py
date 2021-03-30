@@ -5,7 +5,7 @@ from threading import Timer
 import mailUtils
 
 grabUsers = dict()
-results = {'empty': {'count': 0, 'list': []}}
+results = {'empty': {'count': 0, 'list': [], 'status': 0}}
 
 roomInfo = [{'name': '东区6楼声像阅览室', 'num': '126', 'roomID': '2062', 'mapId': '56', 'code': 'DSXYLS602'},
             {'name': '东区6楼电子阅览室', 'num': '153', 'roomID': '2063', 'mapId': '83', 'code': 'DZX601'},
@@ -62,21 +62,21 @@ def getUserInfoBySeat(roomID, seatID):
     data = []
     if len(infos) != 0:
         data = json.loads(infos)
-    print(data)
+        print(data)
+        return data
 
-    result = {}
-    for i in data:
-        startTime = datetime.strptime(i['StartTime'], '%Y/%m/%d %H:%M:%S')
-        endTime = datetime.strptime(i['EndTime'], '%Y/%m/%d %H:%M:%S')
-
-        if startTime < datetime.now() < endTime:
-            result['startTime'] = i['StartTime']
-            result['endTime'] = i['EndTime']
-            result['id'] = i['reader_no']
-            result['department'] = i['department_name']
-            result['name'] = i['real_name']
-
-    return result
+    # for i in data:
+    #     startTime = datetime.strptime(i['StartTime'], '%Y/%m/%d %H:%M:%S')
+    #     endTime = datetime.strptime(i['EndTime'], '%Y/%m/%d %H:%M:%S')
+    #
+    #     if startTime < datetime.now() < endTime:
+    #         result['startTime'] = i['StartTime']
+    #         result['endTime'] = i['EndTime']
+    #         result['id'] = i['reader_no']
+    #         result['department'] = i['department_name']
+    #         result['name'] = i['real_name']
+    #         return i
+    return None
 
 
 def bindUser(username, password):
@@ -235,6 +235,18 @@ def autoGrab(token):
 
 def morningGrab(token, roomID, seatNo):
     seatNo = 'HHXYTSG' + roomID + str(seatNo).zfill(4)
+    if seatNo == 'HHXYTSG20620026' and not checkAdmin(token):
+        return {'code': 1, 'msg': '管理员坐的座位就别抢了吧哥哥'}
+    else:
+        for item in grabUsers.values():
+            if item['status'] == 3 and item['seatNo'] == seatNo:
+                return {'code': 1, 'msg': '这个座位有人预约了，换一个吧'}
+
+    grabUsers[token] = dict()
+    grabUsers[token]['count'] = 1
+    grabUsers[token]['status'] = 3
+    grabUsers[token]['seatNo'] = seatNo
+
     now = datetime.now()
     if 6 > now.hour >= 0:
         grabTime = datetime(now.year, now.month, now.day, 5, 59, 59)
@@ -245,7 +257,7 @@ def morningGrab(token, roomID, seatNo):
         grabUsers[token]['status'] = 1
         now = datetime.now() + timedelta(minutes=3)
         while now > datetime.now():
-            r = seatDate(tk, sn, '420,1320')
+            r = seatDate(tk, sn, '420,1439')
             if json.loads(r)['code'] == 0 or token not in grabUsers:
                 grabUsers[token]['status'] = 0
                 grabUsers[token]['msg'] = '抢座成功！'
@@ -368,6 +380,35 @@ def autoSign(token):
     l = json.loads(r.text)
     if len(l) > 0:
         return sign(token, l[0]['SeatInfo_Code'])
+
+
+def cancelSeat(id, type):
+    headers = {
+        'Host': 'xzxt.hhtc.edu.cn',
+        'Origin': 'http://xzxt.hhtc.edu.cn',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Referer': 'http://xzxt.hhtc.edu.cn/mobile/html/seat/seat_record.html',
+        'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember=' +
+                  '1B4CDA49ECF4477CAC6A549271936426'
+    }
+
+    data_type = ''
+    submitUrl = ''
+    if int(type) == 2:
+        data_type = 'signOut'
+        submitUrl = 'http://xzxt.hhtc.edu.cn/mobile/ajax/seat/ScanHandler.ashx'
+    elif int(type) == 3:
+        data_type = 'cancel_seat_date'
+        submitUrl = 'http://xzxt.hhtc.edu.cn/mobile/ajax/seat/SeatDateHandler.ashx'
+    data = {
+        'data_type': data_type,
+        'id': id
+    }
+
+    r = requests.post(submitUrl, headers=headers, data=data)
+    print(data)
+    return r.text
 
 
 def checkAdmin(token):

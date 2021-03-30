@@ -1,17 +1,7 @@
-from threading import Timer
 import libraryUtils
+import requests
 import json
-
-# def grap():
-#     while True:
-#         r = libraryUtils.seatDate('1B4CDA49ECF4477CB7C7290A241EB14C', 'HHXYTSG20620026', '510,1320')
-#         print(json.loads(r)['code'])
-#         if json.loads(r)['code'] != 1:
-#             break
-#
-#
-# t = Timer(19800, grap)
-# t.start()
+from datetime import datetime
 
 a = [{'Area_Code': 'HHXY01', 'Code': 'XKYS102', 'Name': '西区开放学习室1-2', 'StartTime': '07:00:00', 'EndTime': '22:00:00',
       'Map_Id': '30', 'Quantity': '32', 'status0': '19', 'status1': '1', 'status2': '12', 'IsLoadMapStatus': '0'},
@@ -50,10 +40,59 @@ a = [{'Area_Code': 'HHXY01', 'Code': 'XKYS102', 'Name': '西区开放学习室1-
      {'Area_Code': 'HHXY02', 'Code': 'DSXYLS602', 'Name': '东区6楼声像阅览室', 'StartTime': '07:00:00', 'EndTime': '22:00:00',
       'Map_Id': '56', 'Quantity': '126', 'status0': '1', 'status1': '2', 'status2': '123', 'IsLoadMapStatus': '0'}]
 
-l = []
-for i in a:
-    t = {'addresscode': i['Code'], 'mapid': i['Map_Id']}
-    t1 = {'key': i['Name'], 'value': t}
-    l.append(t1)
+# roomId = [{label: '东区6楼声像阅览室', value: '2062'}, {label: '东区6楼电子阅览室', value: '2063'},
+#           {label: '东区学习室3-6', value: '2036'}, {label: '东区学习室3-5', value: '2035'},
+#           {label: '东区学习室3-4', value: '2034'}, {label: '东区学习室3-3', value: '2033'},
+#           {label: '东区学习室3-2', value: '2032'}, {label: '东区学习室3-1', value: '2031'},
+#           {label: '东区学习室2-4', value: '2024'}, {label: '东区学习室2-2', value: '2022'},
+#           {label: '东区学习室2-1', value: '2021'}, {label: '西区电子阅览室', value: '1021'},
+#           {label: '西区学习室4-2', value: '1042'}, {label: '西区学习室4-1', value: '1041'},
+#           {label: '西区学习室3-2', value: '1032'}, {label: '西区学习室3-1', value: '1031'},
+#           {label: '西区学习室1-1', value: '1011'}, {label: '西区开放学习室1-2', value: '1012'}]
 
-print(l)
+
+
+
+# for room in roomInfo:
+#     for b in a:
+#         if b.get('Name') == room['name']:
+#             room['mapId'] = b['Map_Id']
+#             room['code'] = b['Code']
+#             break
+#
+# print(roomInfo)
+
+headers_seat = {
+    'Host': 'xzxt.hhtc.edu.cn',
+    'Connection': 'keep-alive',
+    'Origin': 'http://xzxt.hhtc.edu.cn',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Referer': 'http://xzxt.hhtc.edu.cn/mobile/html/seat/seatdate.html',
+    'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember=1B4CDA49ECF4477CAC6A549271936426'
+}
+
+today = libraryUtils.getToday()
+
+
+errorlist = []
+sum = 0
+count=0
+for room in libraryUtils.roomInfo:
+    data = {
+        'data_type': 'setMapPointStatus',
+        'addresscode': room['code'],
+        'mapid': room['mapId'],
+        'seatdate': today,
+    }
+
+    r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/SeatInfoHandler.ashx', headers=headers_seat,
+                      data=data)
+    data = json.loads(json.loads(r.text)['data'])
+    sum+=int(room['num'])
+
+    for item in data:
+        count += 1
+
+print(sum,count)
+
