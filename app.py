@@ -1,3 +1,6 @@
+import json
+from datetime import datetime
+
 from flask import Flask, request
 from flask_cors import CORS
 from threading import Timer
@@ -5,6 +8,11 @@ import libraryUtils as utils
 
 app = Flask(__name__)
 CORS(app)
+
+
+@app.route('/')
+def index():
+    return 'hello！'
 
 
 @app.route('/autolibrary/api/bindUser', methods=['POST'])
@@ -43,6 +51,12 @@ def seatDate():
     token = data['token']
     seatNo = 'HHXYTSG{0}{1}'.format(data['roomID'], str(data['seatNo']).zfill(4))
     results = utils.seatDate(token, seatNo, time)
+    if json.loads(results)['code'] == 0:
+        signTime = (int(str(time).split(',')[0]) - datetime.now().hour * 60 - datetime.now().minute) * 60 - 900
+        if signTime <= 0:
+            signTime = 1
+        t = Timer(signTime, utils.sign, {token: token, seatNo: seatNo})
+        t.start()
     return results
 
 
@@ -59,7 +73,8 @@ def autoGrab():
         utils.grabUsers[token] = dict()
         utils.grabUsers[token]['count'] = 1
         utils.grabUsers[token]['status'] = 1
-        return utils.autoGrab(token)
+        roomID = data['roomID']
+        return utils.autoGrab(token, roomID)
     else:
         roomID = data['roomID']
         seatNo = data['seatNo']
@@ -116,19 +131,26 @@ def isSearchPeople():
 @app.route('/autolibrary/api/cancelSeat', methods=['POST'])
 def cancelSeat():
     data = request.json
-    print(data)
     token = data['token']
     type = data['type']
+    roomID = str(data['roomID'])
+    seatID = str(data['seatNo']).zfill(4)
+    info=utils.getUserInfoBySeat(roomID,seatID)
+    questUser=utils.searchUserInfo(token)
 
-    print(utils.checkAdmin(token))
-    if not utils.checkAdmin(token):
+    check=False
+    for item in info:
+        if utils.checkAdmin(token) or item['reader_no'] == json.loads(json.loads(questUser)['data'])['reader_no']:
+            check=True
+
+    if not check:
         return {'code': 1, 'msg': '危险功能，仅管理员可用！'}
+
 
     results = {}
     if type == 1:
-        roomID = str(data['roomID'])
-        seatID = str(data['seatNo']).zfill(4)
-        results['data'] = utils.getUserInfoBySeat(roomID, seatID)
+
+        results['data'] = info
         results['code'] = 0
         results['msg'] = '查询状态成功！'
         return results
@@ -149,5 +171,55 @@ def sign():
     return utils.autoSign(token)
 
 
+@app.route('/autolibrary/api/getAllSeatsByUser', methods=['POST'])
+def getAllSeatsByUser():
+    token = request.json['token']
+    return utils.getAllSeatsByUser(token)
+
+
+@app.route('/autolibrary/api/getAllLocalUser', methods=['POST'])
+def getAllLocalUser():
+    res = dict()
+    token = request.json['token']
+    if utils.checkAdmin(token):
+        res['data'] = utils.getAllLocalUser()
+        res['code'] = 0
+        res['msg'] = '查询成功！'
+    else:
+        res['code'] = 1
+        res['msg'] = '非管理员！'
+    return res
+
+
+@app.route('/autolibrary/api/addLocalUser', methods=['POST'])
+def addLocalUser():
+    res = dict()
+    token = request.json['token']
+    stuNo = request.json['stuNo']
+    if utils.checkAdmin(token):
+        utils.addLocalUser(stuNo)
+        res['code'] = 0
+        res['msg'] = '添加成功！'
+    else:
+        res['code'] = 1
+        res['msg'] = '非管理员！'
+    return res
+
+
+@app.route('/autolibrary/api/deleteLocalUser', methods=['POST'])
+def deleteLocalUser():
+    res = dict()
+    token = request.json['token']
+    stuNo = request.json['stuNo']
+    if utils.checkAdmin(token):
+        utils.deleteLocalUser(stuNo)
+        res['code'] = 0
+        res['msg'] = '添加成功！'
+    else:
+        res['code'] = 1
+        res['msg'] = '非管理员！'
+    return res
+
+
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
