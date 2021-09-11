@@ -133,19 +133,24 @@ def cancelSeat():
     data = request.json
     token = data['token']
     type = data['type']
-    roomID = str(data['roomID'])
-    seatID = str(data['seatNo']).zfill(4)
-    info=utils.getUserInfoBySeat(roomID,seatID)
-    questUser=utils.searchUserInfo(token)
+    check = False
 
-    check=False
-    for item in info:
-        if utils.checkAdmin(token) or item['reader_no'] == json.loads(json.loads(questUser)['data'])['reader_no']:
-            check=True
+    if type == 1 or data['roomID'] is not None:
+        roomID = str(data['roomID'])
+        seatID = str(data['seatNo']).zfill(4)
+        info = utils.getUserInfoBySeat(roomID, seatID)
+        questUser = utils.searchUserInfo(token)
+
+        if info is not None:
+            for item in info:
+                if item['reader_no'] == json.loads(json.loads(questUser)['data'])['reader_no']:
+                    check = True
+
+    if utils.checkAdmin(token):
+        check = True
 
     if not check:
         return {'code': 1, 'msg': '危险功能，仅管理员可用！'}
-
 
     results = {}
     if type == 1:

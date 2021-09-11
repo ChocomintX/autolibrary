@@ -99,7 +99,7 @@ def bindUser(username, password):
         'unitid': '6',
         'department': '111',
         'passwd': password,
-        'tel': '13187279944'
+        'tel': '13185479944'
     }
 
     r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/basic/UserHandler.ashx', headers=headers, data=data)
@@ -117,7 +117,7 @@ def bindUser(username, password):
             f.write(json.dumps(config))
 
         # mailUtils.sendEmail('新用户登录', '用户名：{0}  \n密码：{1}  \ntoken：{2}'.format(username, password,
-        #                                                                      r.cookies['dt_cookie_user_name_remember']))
+        #                                                                      r.cookies['dt_cookie_user_name_remember']))s
     return results
 
 
@@ -260,14 +260,17 @@ def morningGrab(token, roomID, seatNo):
         grabTime = datetime(now.year, now.month, now.day, 5, 59, 59) + timedelta(days=1)
 
     def grab(tk, sn):
+        if grabUsers['seatNo'] != sn:
+            return
         grabUsers[token]['status'] = 1
         now = datetime.now() + timedelta(minutes=3)
         while now > datetime.now():
-            r = seatDate(tk, sn, '600,1320')
+            r = seatDate(tk, sn, '420,1320')
+            print(json.loads(r))
             if json.loads(r)['code'] == 0 or token not in grabUsers:
                 grabUsers[token]['status'] = 0
                 grabUsers[token]['msg'] = '抢座成功！'
-                st = Timer(14400, sign, {token: tk, seatNo: sn})
+                st = Timer(3600, sign, {token: tk, seatNo: sn})
                 st.start()
                 break
             elif '可能已被预约了' in json.loads(r)['msg']:
