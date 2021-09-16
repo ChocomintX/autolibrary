@@ -65,6 +65,10 @@ def autoGrab():
     data = request.json
     print(data)
     token = data['token']
+
+    if not utils.checkUserByToken(token):
+        return {'code': 1, 'msg': '创建任务失败，用户无权限！'}
+
     if token in utils.grabUsers and (utils.grabUsers[token]['status'] == 1 or utils.grabUsers[token]['status'] == 3):
         return {'code': 1, 'msg': '创建任务失败，已存在任务！'}
 
@@ -135,7 +139,7 @@ def cancelSeat():
     type = data['type']
     check = False
 
-    if type == 1 or data['roomID'] is not None:
+    if type == 1 or 'roomID' in dict(data).keys():
         roomID = str(data['roomID'])
         seatID = str(data['seatNo']).zfill(4)
         info = utils.getUserInfoBySeat(roomID, seatID)
@@ -219,7 +223,35 @@ def deleteLocalUser():
     if utils.checkAdmin(token):
         utils.deleteLocalUser(stuNo)
         res['code'] = 0
-        res['msg'] = '添加成功！'
+        res['msg'] = '删除成功！'
+    else:
+        res['code'] = 1
+        res['msg'] = '非管理员！'
+    return res
+
+
+@app.route('/autolibrary/api/getTasks', methods=['POST'])
+def getTasks():
+    res = dict()
+    token = request.json['token']
+    if utils.checkAdmin(token):
+        res['data'] = utils.getTasks()
+        res['code'] = 0
+        res['msg'] = '查询成功！'
+    else:
+        res['code'] = 1
+        res['msg'] = '非管理员！'
+    return res
+
+
+@app.route('/autolibrary/api/deleteTask', methods=['POST'])
+def deleteTask():
+    res = dict()
+    token = request.json['token']
+    if utils.checkAdmin(token):
+        utils.deleteTask(token)
+        res['code'] = 0
+        res['msg'] = '删除成功！'
     else:
         res['code'] = 1
         res['msg'] = '非管理员！'

@@ -50,49 +50,21 @@ a = [{'Area_Code': 'HHXY01', 'Code': 'XKYS102', 'Name': '西区开放学习室1-
 #           {label: '西区学习室3-2', value: '1032'}, {label: '西区学习室3-1', value: '1031'},
 #           {label: '西区学习室1-1', value: '1011'}, {label: '西区开放学习室1-2', value: '1012'}]
 
+# print(libraryUtils.unbindUser('1B4CDA49ECF4477C51F03D5B15B04311'))
+# with open('./config.json', 'r') as f:
+#     config = json.load(f)
+#     for user in config['users'].values():
+#         if user['token'] != '':
+#             print(libraryUtils.unbindUser(user['token']))
 
+a = {'685DA9A1B385244750117C9DA05495F9': {'count': 876, 'status': 0, 'seatNo': 'HHXYTSG20620006', 'msg': '抢座成功！'},
+     '685DA9A1B3852447DCD5C61289E42418': {'count': 2045, 'status': 0, 'seatNo': 'HHXYTSG20620005',
+                                          'msg': '预约失败，该时段可能已被预约了，请刷新地图重试'},
+     '1B4CDA49ECF4477CB7C7290A241EB14C': {'count': 1146, 'status': 1, 'seatNo': 'HHXYTSG20620026'},
+     '1B4CDA49ECF4477C98C79B7064AAA30C': {'count': 2112, 'status': 2, 'seatNo': 'HHXYTSG20620041', 'msg': '您已预约该时段'},
+     '1B4CDA49ECF4477CACD0C76B8147FB4E': {'count': 1450, 'status': 1},
+     '1B4CDA49ECF4477CCD180C190413BA7D': {'count': 239, 'status': 2, 'msg': '今天的预约操作次数已经用完了'},
+     '1B4CDA49ECF4477C0133AFA68A9E749C': {'count': 811, 'status': 0, 'seatNo': 'HHXYTSG20620031', 'msg': '抢座成功！'}}
 
-
-# for room in roomInfo:
-#     for b in a:
-#         if b.get('Name') == room['name']:
-#             room['mapId'] = b['Map_Id']
-#             room['code'] = b['Code']
-#             break
-#
-# print(roomInfo)
-
-headers_seat = {
-    'Host': 'xzxt.hhtc.edu.cn',
-    'Connection': 'keep-alive',
-    'Origin': 'http://xzxt.hhtc.edu.cn',
-    'X-Requested-With': 'XMLHttpRequest',
-    'Content-Type': 'application/x-www-form-urlencoded',
-    'Referer': 'http://xzxt.hhtc.edu.cn/mobile/html/seat/seatdate.html',
-    'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember=1B4CDA49ECF4477CAC6A549271936426'
-}
-
-today = libraryUtils.getToday()
-
-
-errorlist = []
-sum = 0
-count=0
-for room in libraryUtils.roomInfo:
-    data = {
-        'data_type': 'setMapPointStatus',
-        'addresscode': room['code'],
-        'mapid': room['mapId'],
-        'seatdate': today,
-    }
-
-    r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/SeatInfoHandler.ashx', headers=headers_seat,
-                      data=data)
-    data = json.loads(json.loads(r.text)['data'])
-    sum+=int(room['num'])
-
-    for item in data:
-        count += 1
-
-print(sum,count)
-
+if __name__ == '__main__':
+    print(libraryUtils.cancelSeat())

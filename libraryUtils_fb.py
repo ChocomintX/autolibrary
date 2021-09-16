@@ -99,7 +99,7 @@ def bindUser(username, password):
         'unitid': '6',
         'department': '111',
         'passwd': password,
-        'tel': '13185479944'
+        'tel': '13187279944'
     }
 
     r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/basic/UserHandler.ashx', headers=headers, data=data)
@@ -117,7 +117,7 @@ def bindUser(username, password):
             f.write(json.dumps(config))
 
         # mailUtils.sendEmail('新用户登录', '用户名：{0}  \n密码：{1}  \ntoken：{2}'.format(username, password,
-        #                                                                      r.cookies['dt_cookie_user_name_remember']))s
+        #                                                                      r.cookies['dt_cookie_user_name_remember']))
     return results
 
 
@@ -189,7 +189,7 @@ def sign(token, seatNo):
     return r.text
 
 
-def autoGrab(token, roomID):
+def autoGrab(token):
     date = getToday()
     headers = {
         'Host': 'xzxt.hhtc.edu.cn',
@@ -201,16 +201,10 @@ def autoGrab(token, roomID):
         'Cookie': 'txw_cookie_txw_unit_Id=968131EA0968E222; dt_cookie_user_name_remember={0}'.format(token)
     }
 
-    for item in roomInfo:
-        if item['roomID'] == roomID:
-            addresscode = item['code']
-            mapid = item['mapId']
-            # print(addresscode, mapid)
-
     data = {
         'data_type': 'setMapPointStatus',
-        'addresscode': addresscode,
-        'mapid': mapid,
+        'addresscode': 'DSXYLS602',
+        'mapid': '56',
         'seatdate': date,
     }
 
@@ -218,11 +212,10 @@ def autoGrab(token, roomID):
     data = json.loads(json.loads(r.text)['data'])
     for item in data:
         if item['Status'] == '0':
-            time = '{0},{1}'.format(datetime.now().hour * 60 + datetime.now().minute + 10, 1320)
+            time = '{0},{1}'.format(datetime.now().hour * 60 + datetime.now().minute + 10, 1439)
             mSeat = json.loads(seatDate(token, item['Seat_Code'], time))
             if mSeat['code'] == 0:
                 grabUsers[token]['status'] = 0
-                grabUsers[token]['seatNo'] = item['Seat_Code']
                 print('已预约，座位号{0}'.format(item['Seat_Code']))
                 mSign = json.loads((sign(token, item['Seat_Code'])))['code']
                 if mSign == 0:
@@ -235,7 +228,7 @@ def autoGrab(token, roomID):
 
     if token in grabUsers and grabUsers.get(token)['status'] == 1:
         grabUsers[token]['count'] += 1
-        t = Timer(1, autoGrab, {token: token, roomID: roomID})
+        t = Timer(5, autoGrab, {token: token})
         t.start()
     return {'code': 0, 'msg': '任务创建成功'}
 
@@ -261,91 +254,26 @@ def morningGrab(token, roomID, seatNo):
         grabTime = datetime(now.year, now.month, now.day, 5, 59, 59) + timedelta(days=1)
 
     def grab(tk, sn):
-        # if grabUsers['seatNo'] != sn:
-        #     return
         grabUsers[token]['status'] = 1
         now = datetime.now() + timedelta(minutes=3)
         while now > datetime.now():
-            r = seatDate(tk, sn, '420,1320')
-            print(json.loads(r))
+            r = seatDate(tk, sn, '420,1439')
             if json.loads(r)['code'] == 0 or token not in grabUsers:
                 grabUsers[token]['status'] = 0
                 grabUsers[token]['msg'] = '抢座成功！'
                 st = Timer(3600, sign, {token: tk, seatNo: sn})
                 st.start()
                 break
-            elif '可能已被预约了' in json.loads(r)['msg']:
-                info = getUserInfoBySeat(roomID, seatNo[len(seatNo) - 4:len(seatNo)])[0]
-                if info is not None:
-                    print('预约失败,开始自动抢座')
-                    autoGrab(token, roomID)
-                    # print('{0}已经被抢了，抢座人信息:{1}'.format(sn, info))
-                    # if not checkUserById(info['reader_no']):
-                    #     print('取消原本{0}的预约'.format(sn))
-                    #     cancelSeat(info['Id'], 3)
-                    #     cancelSeat(info['Id'], 2)
-            elif json.loads(r)['code'] == 1:
+            else:
                 grabUsers[token]['count'] += 1
-
-        # if grabUsers[token]['status'] == 1:
-        #     print('预约失败,开始自动抢座')
-        #     autoGrab(token, roomID)
+        if grabUsers[token]['status'] == 1:
+            grabUsers[token]['status'] = 2
+            grabUsers[token]['msg'] = '未抢到该座位'
 
     seconds = (grabTime - now).seconds
     t = Timer(seconds, grab, {token: token, seatNo: seatNo})
     t.start()
     return {'code': 0, 'msg': '任务创建成功'}
-
-
-# def morningGrab2(token, roomID, seatNo):
-#     seatNo = 'HHXYTSG' + roomID + str(seatNo).zfill(4)
-#     if seatNo == 'HHXYTSG20620026' and not checkAdmin(token):
-#         return {'code': 1, 'msg': '管理员坐的座位就别抢了吧哥哥'}
-#     else:
-#         for item in grabUsers.values():
-#             if item['status'] == 3 and item['seatNo'] == seatNo:
-#                 return {'code': 1, 'msg': '这个座位有人预约了，换一个吧'}
-#
-#     grabUsers[token] = dict()
-#     grabUsers[token]['count'] = 1
-#     grabUsers[token]['status'] = 3
-#     grabUsers[token]['seatNo'] = seatNo
-#
-#     now = datetime.now()
-#     if 6 > now.hour >= 0:
-#         grabTime = datetime(now.year, now.month, now.day, 5, 59, 59)
-#     else:
-#         grabTime = datetime(now.year, now.month, now.day, 5, 59, 59) + timedelta(days=1)
-#
-#     def grab(tk, sn):
-#         grabUsers[token]['status'] = 1
-#         now = datetime.now() + timedelta(seconds=5)
-#         while now > datetime.now():
-#
-#             r = seatDate(tk, sn, '600,1439')
-#             if json.loads(r)['code'] == 0 or token not in grabUsers:
-#                 grabUsers[token]['status'] = 0
-#                 grabUsers[token]['msg'] = '抢座成功！'
-#                 st = Timer(14400, sign, {token: tk, seatNo: sn})
-#                 st.start()
-#                 break
-#             elif '可能已被预约了' in json.loads(r)['msg']:
-#                 info = getUserInfoBySeat(roomID, seatNo[len(seatNo) - 4:len(seatNo)])[0]
-#                 print('{0}已经被抢了，抢座人信息:{1}'.format(sn, info))
-#                 if not checkUserById(info['reader_no']):
-#                     print('取消原本{0}的预约'.format(sn))
-#                     # cancelSeat(info['Id'], 3)
-#             elif json.loads(r)['code'] == 1:
-#                 grabUsers[token]['count'] += 1
-#
-#         if grabUsers[token]['status'] == 1:
-#             # autoGrab(token)
-#             print('运行自动抢座')
-#
-#     seconds = (grabTime - now).seconds
-#     t = Timer(1, grab, {token: token, seatNo: seatNo})
-#     t.start()
-#     return {'code': 0, 'msg': '任务创建成功'}
 
 
 def searchPeople(token, name):
@@ -432,12 +360,6 @@ def searchUserInfo(token):
 
 
 def autoSign(token):
-    l = json.loads(getAllSeatsByUser(token))
-    if len(l) > 0:
-        return sign(token, l[0]['SeatInfo_Code'])
-
-
-def getAllSeatsByUser(token):
     headers = {
         'Host': 'xzxt.hhtc.edu.cn',
         'Connection': 'keep-alive',
@@ -455,7 +377,9 @@ def getAllSeatsByUser(token):
     }
 
     r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/seat/SeatRecordHandler.ashx', headers=headers, data=data)
-    return r.text
+    l = json.loads(r.text)
+    if len(l) > 0:
+        return sign(token, l[0]['SeatInfo_Code'])
 
 
 def cancelSeat(id, type):
@@ -505,53 +429,3 @@ def checkUserById(id):
     with open('./config.json', 'r') as f:
         config = json.load(f)
         return str(id) in config['users'].keys()
-
-
-def getAllLocalUser():
-    with open('./config.json', 'r') as f:
-        users = json.load(f)['users']
-        print(users)
-        res = []
-        for i in users:
-            item = users[i]
-            item['stuNo'] = i
-            res.append(item)
-        return res
-
-
-def addLocalUser(stuNo):
-    with open('./config.json', 'r') as f:
-        config = json.load(f)
-    with open('./config.json', 'w') as f:
-        config['users'][stuNo] = {}
-        f.write(json.dumps(config))
-
-
-def deleteLocalUser(stuNo):
-    with open('./config.json', 'r') as f:
-        config = dict(json.load(f))
-    with open('./config.json', 'w') as f:
-        # print(config)
-        config.pop(stuNo)
-        f.write(json.dumps(config))
-
-
-def getTasks():
-    l = list()
-    with open('./config.json') as r:
-        tokens = json.load(r)
-        gra = grabUsers
-        for k in grabUsers:
-            data = json.loads(json.loads(searchUserInfo(k))['data'])
-            res = dict()
-            res['token'] = k
-            res['name'] = data['real_name']
-            res['id'] = data['reader_no']
-            res['seatNo'] = grabUsers[k]['seatNo']
-            res['status'] = grabUsers[k]['status']
-            l.append(res)
-    return l
-
-
-def deleteTask(token):
-    grabUsers.pop(token);
