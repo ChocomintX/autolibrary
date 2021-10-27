@@ -27,6 +27,15 @@ def bindUser():
     return results
 
 
+@app.route('/autolibrary/api/unbindUser', methods=['POST'])
+def unbindUser():
+    data = request.json
+    utils.unbindUser(data['token'])
+    utils.bindUser(data['stuNo'], data['stuNo'])
+    results = utils.unbindUser(data['token'])
+    return results
+
+
 @app.route('/autolibrary/api/searchSeat', methods=['POST'])
 def searchSeat():
     data = request.json
@@ -248,8 +257,9 @@ def getTasks():
 def deleteTask():
     res = dict()
     token = request.json['token']
+    cancelToken = request.json['cancelToken']
     if utils.checkAdmin(token):
-        utils.deleteTask(token)
+        utils.deleteTask(cancelToken)
         res['code'] = 0
         res['msg'] = '删除成功！'
     else:

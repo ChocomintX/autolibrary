@@ -7,24 +7,44 @@ import mailUtils
 grabUsers = dict()
 results = {'empty': {'count': 0, 'list': [], 'status': 0}}
 
-roomInfo = [{'name': '东区6楼声像阅览室', 'num': '126', 'roomID': '2062', 'mapId': '56', 'code': 'DSXYLS602'},
-            {'name': '东区6楼电子阅览室', 'num': '153', 'roomID': '2063', 'mapId': '83', 'code': 'DZX601'},
-            {'name': '东区学习室3-6', 'num': '251', 'roomID': '2036', 'mapId': '27', 'code': 'DZXS306'},
-            {'name': '东区学习室3-5', 'num': '170', 'roomID': '2035', 'mapId': '26', 'code': 'DZXS305'},
-            {'name': '东区学习室3-4', 'num': '74', 'roomID': '2034', 'mapId': '25', 'code': 'DZXS304'},
-            {'name': '东区学习室3-3', 'num': '74', 'roomID': '2033', 'mapId': '24', 'code': 'DZXS303'},
-            {'name': '东区学习室3-2', 'num': '108', 'roomID': '2032', 'mapId': '23', 'code': 'DZXS302'},
-            {'name': '东区学习室3-1', 'num': '108', 'roomID': '2031', 'mapId': '22', 'code': 'DZXS301'},
-            {'name': '东区学习室2-4', 'num': '74', 'roomID': '2024', 'mapId': '21', 'code': 'DZXS204'},
-            {'name': '东区学习室2-2', 'num': '108', 'roomID': '2022', 'mapId': '20', 'code': 'DZXS202'},
-            {'name': '东区学习室2-1', 'num': '108', 'roomID': '2021', 'mapId': '19', 'code': 'DZXS201'},
-            {'name': '西区电子阅览室', 'num': '54', 'roomID': '1021', 'mapId': '84', 'code': 'XZXS201'},
-            {'name': '西区学习室4-2', 'num': '151', 'roomID': '1042', 'mapId': '17', 'code': 'XZXS402'},
-            {'name': '西区学习室4-1', 'num': '95', 'roomID': '1041', 'mapId': '16', 'code': 'XZXS401'},
-            {'name': '西区学习室3-2', 'num': '149', 'roomID': '1032', 'mapId': '15', 'code': 'XZXS302'},
-            {'name': '西区学习室3-1', 'num': '95', 'roomID': '1031', 'mapId': '14', 'code': 'XZXS301'},
-            {'name': '西区学习室1-1', 'num': '48', 'roomID': '1011', 'mapId': '29', 'code': 'XKYS101'},
-            {'name': '西区开放学习室1-2', 'num': '32', 'roomID': '1012', 'mapId': '30', 'code': 'XKYS102'}]
+# roomInfo = [{'name': '东区6楼声像阅览室', 'num': '126', 'roomID': '2062', 'mapId': '56', 'code': 'DSXYLS602'},
+#             {'name': '东区6楼电子阅览室', 'num': '153', 'roomID': '2063', 'mapId': '83', 'code': 'DZX601'},
+#             {'name': '东区学习室3-6', 'num': '251', 'roomID': '2036', 'mapId': '27', 'code': 'DZXS306'},
+#             {'name': '东区学习室3-5', 'num': '170', 'roomID': '2035', 'mapId': '26', 'code': 'DZXS305'},
+#             {'name': '东区学习室3-4', 'num': '74', 'roomID': '2034', 'mapId': '25', 'code': 'DZXS304'},
+#             {'name': '东区学习室3-3', 'num': '74', 'roomID': '2033', 'mapId': '24', 'code': 'DZXS303'},
+#             {'name': '东区学习室3-2', 'num': '108', 'roomID': '2032', 'mapId': '23', 'code': 'DZXS302'},
+#             {'name': '东区学习室3-1', 'num': '108', 'roomID': '2031', 'mapId': '22', 'code': 'DZXS301'},
+#             {'name': '东区学习室2-4', 'num': '74', 'roomID': '2024', 'mapId': '21', 'code': 'DZXS204'},
+#             {'name': '东区学习室2-2', 'num': '108', 'roomID': '2022', 'mapId': '20', 'code': 'DZXS202'},
+#             {'name': '东区学习室2-1', 'num': '108', 'roomID': '2021', 'mapId': '19', 'code': 'DZXS201'},
+#             {'name': '西区电子阅览室', 'num': '54', 'roomID': '1021', 'mapId': '84', 'code': 'XZXS201'},
+#             {'name': '西区学习室4-2', 'num': '151', 'roomID': '1042', 'mapId': '17', 'code': 'XZXS402'},
+#             {'name': '西区学习室4-1', 'num': '95', 'roomID': '1041', 'mapId': '16', 'code': 'XZXS401'},
+#             {'name': '西区学习室3-2', 'num': '149', 'roomID': '1032', 'mapId': '15', 'code': 'XZXS302'},
+#             {'name': '西区学习室3-1', 'num': '95', 'roomID': '1031', 'mapId': '14', 'code': 'XZXS301'},
+#             {'name': '西区学习室1-1', 'num': '48', 'roomID': '1011', 'mapId': '29', 'code': 'XKYS101'},
+#             {'name': '西区开放学习室1-2', 'num': '32', 'roomID': '1012', 'mapId': '30', 'code': 'XKYS102'}]
+
+roomInfo = [{'name': '东区6楼声像阅览室', 'num': '126', 'mapId': '56', 'code': 'DSXYLS602', 'roomID': '2062'},
+            {'name': '东区6楼电子阅览室', 'num': '153', 'mapId': '83', 'code': 'DZX601', 'roomID': '2063'},
+            {'name': '东区学习室3-5', 'num': '170', 'mapId': '26', 'code': 'DZXS305', 'roomID': '2035'},
+            {'name': '东区学习室3-4', 'num': '74', 'mapId': '25', 'code': 'DZXS304', 'roomID': '2034'},
+            {'name': '东区学习室3-3', 'num': '74', 'mapId': '24', 'code': 'DZXS303', 'roomID': '2033'},
+            {'name': '东区学习室3-2', 'num': '108', 'mapId': '23', 'code': 'DZXS302', 'roomID': '2032'},
+            {'name': '东区学习室3-1', 'num': '108', 'mapId': '22', 'code': 'DZXS301', 'roomID': '2031'},
+            {'name': '东区学习室2-6(原校史馆)', 'num': '131', 'mapId': '85', 'code': 'DZXS206', 'roomID': '2026'},
+            {'name': '东区学习室2-4', 'num': '74', 'mapId': '21', 'code': 'DZXS204', 'roomID': '2024'},
+            {'name': '东区学习室2-2', 'num': '108', 'mapId': '20', 'code': 'DZXS202', 'roomID': '2022'},
+            {'name': '东区学习室2-1', 'num': '108', 'mapId': '19', 'code': 'DZXS201', 'roomID': '2021'},
+            {'name': '西区学习室5-1', 'num': '128', 'mapId': '18', 'code': 'XZXS501', 'roomID': '1051'},
+            {'name': '西区学习室4-2', 'num': '151', 'mapId': '17', 'code': 'XZXS402', 'roomID': '1042'},
+            {'name': '西区学习室4-1', 'num': '95', 'mapId': '16', 'code': 'XZXS401', 'roomID': '1041'},
+            {'name': '西区学习室3-2', 'num': '150', 'mapId': '15', 'code': 'XZXS302', 'roomID': '1032'},
+            {'name': '西区学习室3-1', 'num': '95', 'mapId': '14', 'code': 'XZXS301', 'roomID': '1031'},
+            {'name': '西区电子阅览室', 'num': '55', 'mapId': '84', 'code': 'XZXS201', 'roomID': '1021'},
+            {'name': '西区开放学习室1-2', 'num': '30', 'mapId': '30', 'code': 'XKYS102', 'roomID': '1012'},
+            {'name': '西区学习室1-1', 'num': '48', 'mapId': '29', 'code': 'XKYS101', 'roomID': '1011'}]
 
 
 def getToday():
@@ -99,7 +119,7 @@ def bindUser(username, password):
         'unitid': '6',
         'department': '111',
         'passwd': password,
-        'tel': '13185479944'
+        'tel': '17680542133'
     }
 
     r = requests.post('http://xzxt.hhtc.edu.cn/mobile/ajax/basic/UserHandler.ashx', headers=headers, data=data)
@@ -112,8 +132,12 @@ def bindUser(username, password):
             config = json.load(f)
 
         with open('./config.json', 'w') as f:
-            config['users'][username]['token'] = results['token']
-            config['users'][username]['password'] = password
+            try:
+                config['users'][username]['token'] = results['token']
+                config['users'][username]['password'] = password
+                config['users'][username]['name'] = json.loads(json.loads(searchUserInfo(results['token']))['data'])['real_name']
+            except:
+                print('绑定出错,错误日志:')
             f.write(json.dumps(config))
 
         # mailUtils.sendEmail('新用户登录', '用户名：{0}  \n密码：{1}  \ntoken：{2}'.format(username, password,
@@ -266,12 +290,12 @@ def morningGrab(token, roomID, seatNo):
         grabUsers[token]['status'] = 1
         now = datetime.now() + timedelta(minutes=3)
         while now > datetime.now():
-            r = seatDate(tk, sn, '420,1320')
+            r = seatDate(tk, sn, '480,1320')
             print(json.loads(r))
             if json.loads(r)['code'] == 0 or token not in grabUsers:
                 grabUsers[token]['status'] = 0
                 grabUsers[token]['msg'] = '抢座成功！'
-                st = Timer(3600, sign, {token: tk, seatNo: sn})
+                st = Timer(7200, sign, {token: tk, seatNo: sn})
                 st.start()
                 break
             elif '可能已被预约了' in json.loads(r)['msg']:
@@ -532,7 +556,7 @@ def deleteLocalUser(stuNo):
         config = dict(json.load(f))
     with open('./config.json', 'w') as f:
         # print(config)
-        config.pop(stuNo)
+        config['users'].pop(stuNo)
         f.write(json.dumps(config))
 
 
@@ -542,12 +566,18 @@ def getTasks():
         tokens = json.load(r)
         gra = grabUsers
         for k in grabUsers:
-            data = json.loads(json.loads(searchUserInfo(k))['data'])
+            try:
+                data = json.loads(json.loads(searchUserInfo(k))['data'])
+            except:
+                continue
             res = dict()
             res['token'] = k
             res['name'] = data['real_name']
             res['id'] = data['reader_no']
-            res['seatNo'] = grabUsers[k]['seatNo']
+            if 'seatNo' in grabUsers[k].keys():
+                res['seatNo'] = grabUsers[k]['seatNo']
+            else:
+                res['seatNo'] = '正在抢座'
             res['status'] = grabUsers[k]['status']
             l.append(res)
     return l
